@@ -3,8 +3,7 @@ import { navigationRef } from '../navigation/NavigationRef';
 import { saveRefreshToken, getRefreshToken, deleteRefreshToken } from '../utils/secureStore';
 import { LoginRequest, AuthResponse, User } from '../types/auth';
 import { bindAuthRef } from './authRef';
-import authApi from '../api/auth';
-
+import { login, refresh, getProfile } from '../api/auth';
 
 type AuthContextType = {
   accessToken: string | null;
@@ -14,7 +13,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -22,7 +21,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAuthenticated = !!accessToken;
 
-  // Bind token helpers to avoid require cycle
   bindAuthRef({
     getAccessToken: () => accessToken,
     setAccessToken: (t) => setAccessToken(t),
@@ -30,26 +28,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const signIn = async (creds: LoginRequest, redirectTo?: string) => {
-    const res: AuthResponse = await authApi.login(creds);
+    const res: AuthResponse = await login(creds);
+    if (!res.accessToken) throw new Error('Login failed');
 
-    if (!res.token) throw new Error('Login failed');
-
-    setAccessToken(res.token);
+    setAccessToken(res.accessToken);
     if (res.refreshToken) await saveRefreshToken(res.refreshToken);
+    setUser(res.user ?? await getProfile());
 
-    if (res.user) {
-      setUser(res.user);
-    } else {
-      try {
-        const profile = await authApi.getProfile();
-        if (profile) setUser(profile);
-      } catch (e) {
-        console.warn('Failed to fetch profile after login', e);
-      }
-    }
-
-    const dest = redirectTo ?? 'Home';
-    navigationRef.current?.navigate(dest as never);
+    navigationRef.current?.navigate(redirectTo ?? 'Home' as never);
   };
 
   const internalSignOut = async () => {
@@ -59,29 +45,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     navigationRef.current?.navigate('Login' as never);
   };
 
-  const refresh = async () => {
+  const restore = async () => {
     const token = await getRefreshToken();
     if (!token) return;
 
     try {
-      const res = await authApi.refresh({ refreshToken: token });
-      if (res.accessToken) setAccessToken(res.accessToken);
+      const res = await refresh({ refreshToken: token });
+      setAccessToken(res.accessToken);
       if (res.refreshToken) await saveRefreshToken(res.refreshToken);
-
-      if (res.user) {
-        setUser(res.user);
-      } else {
-        const profile = await authApi.getProfile();
-        if (profile) setUser(profile);
-      }
-    } catch (e) {
-      console.warn('Refresh failed', e);
+      setUser(res.user ?? await getProfile());
+    } catch {
       await internalSignOut();
     }
   };
 
   useEffect(() => {
-    refresh();
+    restore();
   }, []);
 
   return (

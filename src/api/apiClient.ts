@@ -1,9 +1,9 @@
 import axios from 'axios';
-import { getAccessToken, setAccessToken, signOut } from '../auth/authRef';
+import * as authRef from '../auth/authRef';
 import { getRefreshToken, saveRefreshToken, deleteRefreshToken } from '../utils/secureStore';
 import { AuthResponse, RefreshTokenRequest } from '../types/auth';
 
-const BASE = 'https://localhost:7261/api/auth'; // adjust to your API base
+const BASE = 'https://localhost:7261/api/auth'; // Replace with your actual API base
 
 const api = axios.create({
   baseURL: BASE,
@@ -13,13 +13,13 @@ const api = axios.create({
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (v?: any) => void; reject: (e: any) => void }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: any, token: string = '') => {
   failedQueue.forEach(p => (error ? p.reject(error) : p.resolve(token)));
   failedQueue = [];
 };
 
 api.interceptors.request.use(config => {
-  const token = getAccessToken();
+  const token = authRef.getAccessToken();
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,16 +27,17 @@ api.interceptors.request.use(config => {
 });
 
 api.interceptors.response.use(
-  r => r,
-  async err => {
-    const originalReq = err.config;
-    if (err.response?.status === 401 && !originalReq._retry) {
+  response => response,
+  async error => {
+    const originalReq = error.config;
+
+    if (error.response?.status === 401 && !originalReq._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then((token: string | null) => {
+        }).then(token => {
           if (token && originalReq.headers) {
-            originalReq.headers.Authorization = `Bearer ${token}`;
+            originalReq.headers.Authorization = `Bearer ${token as string}`;
           }
           return axios(originalReq);
         });
@@ -50,30 +51,32 @@ api.interceptors.response.use(
         if (!refreshToken) throw new Error('No refresh token');
 
         const payload: RefreshTokenRequest = { refreshToken };
-        const r = await axios.post<AuthResponse>(`${BASE}/refresh`, payload);
-        const auth = r.data;
+        const response = await axios.post<AuthResponse>(`${BASE}/refresh`, payload);
+        const auth = response.data;
 
-        if (!auth.token) throw new Error('Refresh failed');
+        if (!auth.accessToken) throw new Error('Refresh failed');
 
-        setAccessToken(auth.token);
+        authRef.setAccessToken(auth.accessToken);
         if (auth.refreshToken) await saveRefreshToken(auth.refreshToken);
 
-        processQueue(null, auth.token);
-        if (originalReq.headers) {
-          originalReq.headers.Authorization = `Bearer ${auth.token}`;
+        processQueue(null, auth.accessToken);
+
+        if (auth.accessToken && originalReq.headers) {
+          originalReq.headers.Authorization = `Bearer ${auth.accessToken}`;
         }
+
         return axios(originalReq);
       } catch (refreshErr) {
-        processQueue(refreshErr, null);
+        processQueue(refreshErr, '');
         await deleteRefreshToken();
-        await signOut();
+        await authRef.signOut();
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }
     }
 
-    return Promise.reject(err);
+    return Promise.reject(error);
   }
 );
 

@@ -1,36 +1,74 @@
 import React, { useState } from 'react';
-import { View, Button, Image } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { updateProfile } from '../api/auth';
+import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import { useAuth } from '../auth/AuthProvider';
+import { ScreenLayout } from '../components/ScreenLayout';
+import { tokens } from '../styles/fluentTokens';
 
 export default function UpdateProfileScreen() {
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [firstName, setFirstName] = useState(user?.firstName ?? '');
+  const [lastName, setLastName] = useState(user?.lastName ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
 
-  const pickImage = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
-    if (!res.cancelled) setImageUri(res.uri);
-  };
-
-  const upload = async () => {
-    if (!imageUri) return;
-    const form = new FormData();
-    const filename = imageUri.split('/').pop() || 'photo.jpg';
-    const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : 'image/jpeg';
-    // UpdateProfileRequest file key should match server field name; 'photo' is a common key
-    form.append('photo', {
-      uri: imageUri,
-      name: filename,
-      type,
-    } as any);
-    await updateProfile(form);
+  const onSave = () => {
+    // TODO: call update API
+    console.log('Updated:', { firstName, lastName, email });
   };
 
   return (
-    <View style={{ padding: 16 }}>
-      <Button title="Pick image" onPress={pickImage} />
-      {imageUri && <Image source={{ uri: imageUri }} style={{ width: 120, height: 120 }} />}
-      <Button title="Upload" onPress={upload} />
-    </View>
+    <ScreenLayout title="Update Profile">
+      <View style={styles.card}>
+        <View style={styles.field}>
+          <Text style={styles.label}>First Name</Text>
+          <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} />
+        </View>
+        <View style={styles.field}>
+          <Text style={styles.label}>Last Name</Text>
+          <TextInput style={styles.input} value={lastName} onChangeText={setLastName} />
+        </View>
+        <View style={styles.field}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput style={styles.input} value={email} onChangeText={setEmail} />
+        </View>
+        <Pressable style={styles.button} onPress={onSave}>
+          <Text style={styles.buttonText}>Save</Text>
+        </Pressable>
+      </View>
+    </ScreenLayout>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: tokens.colors.surface,
+    padding: tokens.spacing.l,
+    borderRadius: tokens.radius.m,
+    elevation: 2,
+  },
+  field: {
+    marginBottom: tokens.spacing.m,
+  },
+  label: {
+    color: tokens.colors.textSecondary,
+    marginBottom: 6,
+  },
+  input: {
+    height: 44,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: tokens.radius.s,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+  },
+  button: {
+    backgroundColor: tokens.colors.brand,
+    paddingVertical: 12,
+    borderRadius: tokens.radius.s,
+    alignItems: 'center',
+    marginTop: tokens.spacing.m,
+  },
+  buttonText: {
+    color: tokens.colors.brandText,
+    fontWeight: '600',
+  },
+});

@@ -1,2 +1,3 @@
-import * as React from 'react';
-export const navigationRef = React.createRef<any>();
+import { createNavigationContainerRef } from '@react-navigation/native';
+
+export const navigationRef = createNavigationContainerRef();

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { tokens } from '../styles/fluentTokens';
 import HeaderCommandBar from './HeaderCommandBar';
+import { tokens } from '../styles/fluentTokens';
 
 export const ScreenLayout: React.FC<{ title?: string; children?: React.ReactNode }> = ({ title, children }) => (
   <View style={styles.root}>
@@ -11,6 +11,12 @@ export const ScreenLayout: React.FC<{ title?: string; children?: React.ReactNode
 );
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: tokens.colors.background },
-  content: { flex: 1, padding: tokens.spacing.m },
+  root: {
+    flex: 1,
+    backgroundColor: tokens.colors.background,
+  },
+  content: {
+    flex: 1,
+    padding: tokens.spacing.m,
+  },
 });

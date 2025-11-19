@@ -1,29 +1,28 @@
-import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
-const KEY = (k: string) => `koet:${k}`;
-
-const hasNative = typeof SecureStore.getItemAsync === 'function' && Platform.OS !== 'web';
+const REFRESH_KEY = 'refresh_token';
 
 export const saveRefreshToken = async (token: string) => {
-  if (!hasNative) {
-    localStorage.setItem(KEY('refreshToken'), token);
-    return;
+  if (Platform.OS === 'web') {
+    localStorage.setItem(REFRESH_KEY, token);
+  } else {
+    await SecureStore.setItemAsync(REFRESH_KEY, token);
   }
-  await SecureStore.setItemAsync(KEY('refreshToken'), token);
 };
 
 export const getRefreshToken = async (): Promise<string | null> => {
-  if (!hasNative) {
-    return localStorage.getItem(KEY('refreshToken'));
+  if (Platform.OS === 'web') {
+    return localStorage.getItem(REFRESH_KEY);
+  } else {
+    return await SecureStore.getItemAsync(REFRESH_KEY);
   }
-  return SecureStore.getItemAsync(KEY('refreshToken'));
 };
 
 export const deleteRefreshToken = async () => {
-  if (!hasNative) {
-    localStorage.removeItem(KEY('refreshToken'));
-    return;
+  if (Platform.OS === 'web') {
+    localStorage.removeItem(REFRESH_KEY);
+  } else {
+    await SecureStore.deleteItemAsync(REFRESH_KEY);
   }
-  await SecureStore.deleteItemAsync(KEY('refreshToken'));
 };

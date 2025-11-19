@@ -1,23 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import { useAuth } from '../auth/AuthProvider';
 import { tokens } from '../styles/fluentTokens';
-import { useAuth } from '../hooks/useAuth';
-
-// Simple Fluent-like primitives using RN components styled with tokens
-const FluentButton: React.FC<{ title: string; onPress: () => void; primary?: boolean }> = ({ title, onPress, primary }) => (
-  <View style={[styles.button, primary && styles.primaryButton]}>
-    <Text onPress={onPress} style={[styles.buttonText, primary && styles.primaryText]}>{title}</Text>
-  </View>
-);
-
-const FluentTextInput: React.FC<any> = (props) => (
-  <View style={styles.field}>
-    <Text style={styles.label}>{props.label}</Text>
-    <View style={styles.inputBox}>
-      <Text {...props} />
-    </View>
-  </View>
-);
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -39,39 +23,92 @@ export default function LoginScreen() {
         <Text style={styles.title}>Sign in</Text>
         <Text style={styles.subtitle}>Use your account to continue</Text>
 
-        <View style={{ marginTop: tokens.spacing.m }} />
-        <Text style={styles.label}>Email</Text>
-        <View style={styles.input}>
-          <Text onPress={() => {}}>{/* replace with TextInput in your real code */}</Text>
+        <View style={styles.field}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
         </View>
 
-        <View style={{ height: 12 }} />
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.input}>
-          <Text onPress={() => {}}>{/* replace with TextInput secureTextEntry */}</Text>
+        <View style={styles.field}>
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
         </View>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
-        <View style={{ height: tokens.spacing.m }} />
-        <FluentButton title="Sign in" onPress={onSubmit} primary />
+        <Pressable style={styles.button} onPress={onSubmit}>
+          <Text style={styles.buttonText}>Sign in</Text>
+        </Pressable>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: tokens.spacing.m },
-  card: { width: '100%', maxWidth: 420, backgroundColor: tokens.colors.surface, padding: tokens.spacing.l, borderRadius: tokens.radius.m, elevation: 2 },
-  title: { fontSize: tokens.fontSize.title, fontWeight: '700', color: tokens.colors.textPrimary },
-  subtitle: { color: '#605E5C', marginTop: 6 },
-  label: { color: '#605E5C', marginBottom: 6 },
-  input: { height: 44, backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 12, justifyContent: 'center' },
-  error: { color: '#a4262c', marginTop: 8 },
-  button: { marginTop: 12, paddingVertical: 12, borderRadius: tokens.radius.s, alignItems: 'center', backgroundColor: '#E1DFDD' },
-  primaryButton: { backgroundColor: tokens.colors.brand },
-  buttonText: { color: '#000' , fontWeight: '600'},
-  primaryText: { color: tokens.colors.brandText },
-  field: {},
-  inputBox: {},
+  container: {
+    flex: 1,
+    backgroundColor: tokens.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: tokens.spacing.m,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: tokens.colors.surface,
+    padding: tokens.spacing.l,
+    borderRadius: tokens.radius.m,
+    elevation: 2,
+  },
+  title: {
+    fontSize: tokens.fontSize.title,
+    fontWeight: '700',
+    color: tokens.colors.textPrimary,
+  },
+  subtitle: {
+    color: tokens.colors.textSecondary,
+    marginTop: 6,
+    marginBottom: tokens.spacing.m,
+  },
+  field: {
+    marginBottom: tokens.spacing.m,
+  },
+  label: {
+    color: tokens.colors.textSecondary,
+    marginBottom: 6,
+  },
+  input: {
+    height: 44,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: tokens.radius.s,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+  },
+  error: {
+    color: tokens.colors.error,
+    marginBottom: tokens.spacing.m,
+  },
+  button: {
+    backgroundColor: tokens.colors.brand,
+    paddingVertical: 12,
+    borderRadius: tokens.radius.s,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: tokens.colors.brandText,
+    fontWeight: '600',
+  },
 });
