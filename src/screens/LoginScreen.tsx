@@ -1,114 +1,91 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthProvider';
-import { tokens } from '../styles/fluentTokens';
+import TopBar from '../components/TopBar';
+import PrimaryButton from '../components/PrimaryButton';
+
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async () => {
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Missing Fields', 'Please enter both email and password.');
+      return;
+    }
+
+    setLoading(true);
     try {
       await signIn({ email, password });
-    } catch (e: any) {
-      setError(e?.message || 'Login failed');
+      navigation.navigate('Home');
+    } catch (err: any) {
+      Alert.alert('Login Failed', err.message || 'Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Sign in</Text>
-        <Text style={styles.subtitle}>Use your account to continue</Text>
+      <TopBar />
+      <View style={styles.content}>
+        <Text style={styles.title}>Login</Text>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Email</Text>
+        <View style={styles.form}>
           <TextInput
             style={styles.input}
             placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
           />
-        </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Password</Text>
           <TextInput
             style={styles.input}
             placeholder="Password"
+            secureTextEntry
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
           />
+
+          {loading ? (
+            <ActivityIndicator size="large" color="#0078D4" />
+          ) : (
+            <PrimaryButton title="Login" onPress={handleLogin} disabled={loading} />
+            
+          )}
         </View>
-
-        {error && <Text style={styles.error}>{error}</Text>}
-
-        <Pressable style={styles.button} onPress={onSubmit}>
-          <Text style={styles.buttonText}>Sign in</Text>
-        </Pressable>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: tokens.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: tokens.spacing.m,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: tokens.colors.surface,
-    padding: tokens.spacing.l,
-    borderRadius: tokens.radius.m,
-    elevation: 2,
-  },
-  title: {
-    fontSize: tokens.fontSize.title,
-    fontWeight: '700',
-    color: tokens.colors.textPrimary,
-  },
-  subtitle: {
-    color: tokens.colors.textSecondary,
-    marginTop: 6,
-    marginBottom: tokens.spacing.m,
-  },
-  field: {
-    marginBottom: tokens.spacing.m,
-  },
-  label: {
-    color: tokens.colors.textSecondary,
-    marginBottom: 6,
-  },
+  container: { flex: 1, backgroundColor: '#F3F2F1' },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 24 },
+  form: { width: '100%', maxWidth: 400 },
   input: {
-    height: 44,
-    borderWidth: 1,
+    height: 48,
     borderColor: '#ccc',
-    borderRadius: tokens.radius.s,
+    borderWidth: 1,
+    borderRadius: 6,
     paddingHorizontal: 12,
+    marginBottom: 16,
     backgroundColor: '#fff',
-  },
-  error: {
-    color: tokens.colors.error,
-    marginBottom: tokens.spacing.m,
-  },
-  button: {
-    backgroundColor: tokens.colors.brand,
-    paddingVertical: 12,
-    borderRadius: tokens.radius.s,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: tokens.colors.brandText,
-    fontWeight: '600',
   },
 });

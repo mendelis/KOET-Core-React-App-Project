@@ -19,3 +19,10 @@ export type User = {
   firstName: string;
   lastName: string;
 };
+
+export type RegisterRequest = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+};
